@@ -1286,37 +1286,66 @@
 // ── DATA ──────────────────────────────────────────────────────────────────────
 // activities: { date, type ('zone2'|'other'|'cross'), bpm, duration, pace?, dist?, crossType?, notes }
 // fiveks:     { date, time, bpm, surface, notes }
-let activities = JSON.parse(localStorage.getItem('tt_activities') || '[]');
-let fiveks     = JSON.parse(localStorage.getItem('tt_fiveks') || '[]');
+let activities = [];
+let fiveks     = [];
 
-// Migrate old 'workouts' data if present
-(function migrate() {
-  const old = localStorage.getItem('tt_workouts');
-  if (old && activities.length === 0) {
-    const ws = JSON.parse(old);
-    ws.forEach(w => {
-      activities.push({
-        date: w.date,
-        type: 'zone2',
-        bpm: w.bpm,
-        duration: null,
-        pace: w.pace,
-        dist: w.dist,
-        notes: w.notes || ''
-      });
+async function syncActivities() {
+  try {
+    await fetch('/api/data/tt_activities', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(activities)
     });
-    localStorage.setItem('tt_activities', JSON.stringify(activities));
-  }
-})();
+  } catch(err) { console.warn('Sync failed', err); }
+}
 
-// (Data trim removed — date filtering handled manually)
+async function syncFiveks() {
+  try {
+    await fetch('/api/data/tt_fiveks', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fiveks)
+    });
+  } catch(err) { console.warn('Sync failed', err); }
+}
+
+async function loadData() {
+  try {
+    const [actsRes, fksRes] = await Promise.all([
+      fetch('/api/data/tt_activities'),
+      fetch('/api/data/tt_fiveks')
+    ]);
+    const serverActs = await actsRes.json();
+    const serverFks  = await fksRes.json();
+
+    if (serverActs.length === 0 && serverFks.length === 0) {
+      // Server empty — migrate any existing localStorage data up
+      const localActs = JSON.parse(localStorage.getItem('tt_activities') || '[]');
+      const localFks  = JSON.parse(localStorage.getItem('tt_fiveks')     || '[]');
+      localActs.forEach(a => activities.push(a));
+      localFks.forEach(f  => fiveks.push(f));
+      if (activities.length > 0 || fiveks.length > 0) {
+        await Promise.all([syncActivities(), syncFiveks()]);
+      }
+    } else {
+      serverActs.forEach(a => activities.push(a));
+      serverFks.forEach(f  => fiveks.push(f));
+    }
+  } catch(err) {
+    // Fallback to localStorage if server unreachable
+    const localActs = JSON.parse(localStorage.getItem('tt_activities') || '[]');
+    const localFks  = JSON.parse(localStorage.getItem('tt_fiveks')     || '[]');
+    localActs.forEach(a => activities.push(a));
+    localFks.forEach(f  => fiveks.push(f));
+  }
+}
 
 // ── EXPORT / IMPORT ───────────────────────────────────────────────────────────
 function exportData() {
   const data = {
-    activities: JSON.parse(localStorage.getItem('tt_activities') || '[]'),
-    fiveks:     JSON.parse(localStorage.getItem('tt_fiveks')     || '[]'),
-    exported:   new Date().toISOString()
+    activities,
+    fiveks,
+    exported: new Date().toISOString()
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
@@ -1331,7 +1360,7 @@ function importData(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     try {
       const data = JSON.parse(e.target.result);
       const acts = data.activities || [];
@@ -1340,12 +1369,11 @@ function importData(event) {
         alert('No data found in this file.');
         return;
       }
-      localStorage.setItem('tt_activities', JSON.stringify(acts));
-      localStorage.setItem('tt_fiveks',     JSON.stringify(fks));
       activities.length = 0;
       acts.forEach(a => activities.push(a));
       fiveks.length = 0;
       fks.forEach(f => fiveks.push(f));
+      await Promise.all([syncActivities(), syncFiveks()]);
       renderAll();
       alert(`Imported ${acts.length} activities and ${fks.length} 5K tests successfully!`);
     } catch(err) {
@@ -1620,7 +1648,7 @@ function saveActivity() {
     } else {
       fiveks.push(entry);
     }
-    localStorage.setItem('tt_fiveks', JSON.stringify(fiveks));
+    syncFiveks();
     closeModals();
     renderFiveks();
     return;
@@ -1662,7 +1690,7 @@ function saveActivity() {
     } else {
       activities.push(entry);
     }
-    localStorage.setItem('tt_activities', JSON.stringify(activities));
+    syncActivities();
     closeModals();
     renderAll();
     return;
@@ -1691,7 +1719,7 @@ function saveActivity() {
     activities.push(entry);
   }
 
-  localStorage.setItem('tt_activities', JSON.stringify(activities));
+  syncActivities();
   closeModals();
   renderAll();
 }
@@ -1701,14 +1729,14 @@ function saveActivity() {
 function deleteActivity(idx) {
   if (!confirm('Delete this activity?')) return;
   activities.splice(idx, 1);
-  localStorage.setItem('tt_activities', JSON.stringify(activities));
+  syncActivities();
   renderAll();
 }
 
 function deleteFivek(idx) {
   if (!confirm('Delete this 5K test?')) return;
   fiveks.splice(idx, 1);
-  localStorage.setItem('tt_fiveks', JSON.stringify(fiveks));
+  syncFiveks();
   renderFiveks();
 }
 
@@ -2404,8 +2432,9 @@ function renderAll() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
   updateCountdown();
+  await loadData();
   renderAll();
 });
 </script>
