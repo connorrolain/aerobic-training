@@ -1,0 +1,2442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aerobic Endurance Tracking</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --soil: #2C1810;
+    --bark: #5C3D2E;
+    --trail: #8B6347;
+    --stone: #B8A99A;
+    --fog: #E8E0D8;
+    --sky: #F5F1EC;
+    --moss: #4A6741;
+    --moss-light: #6B9460;
+    --fern: #8FB882;
+    --summit: #C8523A;
+    --amber: #D4830A;
+    --amber-light: #F0A830;
+    --ink: #1A1209;
+    --slate: #6A7F8B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--sky);
+    color: var(--ink);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* HEADER */
+  header {
+    padding: 32px 0 28px;
+    border-bottom: 2px solid var(--trail);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .header-left h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: clamp(2.4rem, 5vw, 3.6rem);
+    line-height: 0.9;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    color: var(--soil);
+  }
+
+  .header-left h1 span { color: var(--moss); }
+
+  .header-left .subtitle {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--trail);
+  }
+
+  .race-info { text-align: right; }
+
+  .countdown-block {
+    background: var(--soil);
+    color: var(--fog);
+    padding: 12px 20px;
+    border-radius: 4px;
+    text-align: center;
+  }
+
+  .countdown-days {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 2.8rem;
+    line-height: 1;
+    color: var(--amber-light);
+  }
+
+  .countdown-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-top: 2px;
+  }
+
+  .race-date {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--trail);
+    font-weight: 600;
+  }
+
+  /* SECTION HEADERS */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 40px 0 20px;
+    flex-wrap: wrap;
+  }
+
+  .section-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--stone);
+    background: var(--fog);
+    border: 1px solid var(--stone);
+    padding: 2px 8px;
+    border-radius: 2px;
+  }
+
+  .section-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--soil);
+  }
+
+  .section-desc {
+    font-size: 0.8rem;
+    color: var(--trail);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* CARDS */
+  .card {
+    background: white;
+    border: 1px solid var(--fog);
+    border-radius: 6px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(44,24,16,0.06);
+  }
+
+  /* ── WEEKLY VOLUME BAR ── */
+  .volume-bar {
+    background: white;
+    border: 1px solid var(--fog);
+    border-radius: 6px;
+    padding: 20px 24px 16px;
+    margin-top: 20px;
+    box-shadow: 0 2px 12px rgba(44,24,16,0.06);
+  }
+
+  .volume-bar-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .volume-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--trail);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .volume-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .vol-stat { display: flex; flex-direction: column; gap: 1px; }
+
+  .vol-stat-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--stone);
+    font-weight: 600;
+  }
+
+  .vol-stat-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 1.3rem;
+    color: var(--soil);
+    line-height: 1;
+  }
+
+  .vol-stat-val.green { color: var(--moss); }
+  .vol-stat-val.red   { color: var(--summit); }
+
+  .weekly-table-header {
+    display: grid;
+    grid-template-columns: 160px 1fr 1fr 1fr 1fr;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--stone);
+    font-weight: 600;
+    border-bottom: 1px solid var(--fog);
+    margin-top: 16px;
+  }
+
+  .weekly-table-row {
+    display: grid;
+    grid-template-columns: 160px 1fr 1fr 1fr 1fr;
+    gap: 8px;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--sky);
+    align-items: center;
+    transition: background 0.15s;
+  }
+
+  .weekly-table-row:hover { background: var(--sky); }
+  .weekly-table-row:last-child { border-bottom: none; }
+  .weekly-table-row.current-week { background: #F6FAF5; }
+  .weekly-table-row.current-week .week-label { font-weight: 700; color: var(--moss); }
+
+  .volume-chart-wrap {
+    height: 140px;
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .vol-legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+
+  .vol-leg-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--trail);
+  }
+
+  .vol-leg-dot {
+    width: 9px; height: 9px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+
+  /* ── AE SECTION ── */
+  .ae-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 640px) { .ae-grid { grid-template-columns: 1fr; } }
+
+  .ae-summary {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--fog);
+    margin-bottom: 4px;
+  }
+
+  .ae-stat { display: flex; flex-direction: column; gap: 2px; }
+
+  .ae-stat-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--stone);
+    font-weight: 600;
+  }
+
+  .ae-stat-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 1.6rem;
+    color: var(--soil);
+    line-height: 1;
+  }
+
+  .ae-stat-val.green { color: var(--moss); }
+  .ae-stat-val.amber { color: var(--amber); }
+
+  .ae-trend {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #F0F7EE;
+    border: 1px solid var(--fern);
+    border-radius: 4px;
+    padding: 8px 14px;
+  }
+
+  .ae-trend-arrow { font-size: 1.4rem; color: var(--moss); }
+
+  .ae-trend-text {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--moss);
+  }
+
+  .ae-trend-sub { font-size: 0.7rem; color: var(--moss); opacity: 0.8; }
+
+  .chart-container {
+    grid-column: 1 / -1;
+    height: 220px;
+    position: relative;
+  }
+
+  /* ── WEEKLY LOG ── */
+  .week-block {
+    border: 1px solid var(--fog);
+    border-radius: 6px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .week-block-header {
+    background: var(--soil);
+    color: var(--fog);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .week-block-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .week-block-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 0.72rem;
+    color: var(--stone);
+    letter-spacing: 0.06em;
+  }
+
+  .week-block-stats span { color: var(--fog); font-weight: 600; }
+
+  .day-row {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    border-top: 1px solid var(--fog);
+  }
+
+  .day-row.rest-day .day-label { opacity: 0.35; }
+
+  .day-label {
+    padding: 12px 14px;
+    border-right: 1px solid var(--fog);
+    background: var(--sky);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1px;
+  }
+
+  .day-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--trail);
+  }
+
+  .day-date {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--soil);
+  }
+
+  .day-label.today .day-name { color: var(--moss); }
+  .day-label.today .day-date { color: var(--moss); }
+
+  .day-activities {
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .day-rest {
+    padding: 12px 16px;
+    font-size: 0.75rem;
+    color: var(--stone);
+    letter-spacing: 0.06em;
+    font-style: italic;
+  }
+
+  .activity-entry {
+    display: grid;
+    grid-template-columns: 90px 1fr 80px 65px 90px 52px;
+    gap: 8px;
+    padding: 8px 16px;
+    align-items: center;
+    border-bottom: 1px solid var(--sky);
+    transition: background 0.12s;
+  }
+
+  .activity-entry:last-child { border-bottom: none; }
+  .activity-entry:hover { background: var(--sky); }
+
+  .activity-entry-header {
+    display: grid;
+    grid-template-columns: 90px 1fr 80px 65px 90px 52px;
+    gap: 8px;
+    padding: 6px 16px;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--stone);
+    font-weight: 600;
+    border-top: 1px solid var(--fog);
+    background: #FAFAF8;
+  }
+
+  .row-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+  .activity-entry:hover .row-actions { opacity: 1; }
+
+  .type-tag {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+
+  .type-tag.zone2   { background: #EEF6EC; color: var(--moss); border: 1px solid var(--fern); }
+  .type-tag.other   { background: #F5F1EC; color: var(--trail); border: 1px solid var(--stone); }
+  .type-tag.cross   { background: #EEF3F6; color: var(--slate); border: 1px solid #A8C0CC; }
+
+  .pace-badge {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--soil);
+  }
+
+  .bpm-badge { font-size: 0.82rem; color: var(--trail); font-weight: 500; }
+
+  .delta-pill {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .delta-pill.improve { background: #F0F7EE; color: var(--moss); }
+  .delta-pill.baseline { background: var(--fog); color: var(--stone); }
+  .delta-pill.decline { background: #FEF0EE; color: var(--summit); }
+
+  .icon-btn {
+    background: none;
+    border: 1px solid var(--fog);
+    border-radius: 3px;
+    padding: 3px 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--stone);
+    transition: all 0.12s;
+    line-height: 1;
+  }
+
+  .icon-btn:hover { border-color: var(--trail); color: var(--soil); background: var(--sky); }
+  .icon-btn.delete:hover { border-color: var(--summit); color: var(--summit); background: #FEF0EE; }
+
+  /* 5K */
+  .fivek-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 580px) { .fivek-grid { grid-template-columns: 1fr; } }
+
+  .fivek-result {
+    border: 1px solid var(--fog);
+    border-radius: 6px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .fivek-result.latest {
+    border-color: var(--moss);
+    background: linear-gradient(135deg, #F8FCF7, white);
+  }
+
+  .fivek-result.latest::before {
+    content: 'LATEST';
+    position: absolute;
+    top: 10px; right: 10px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: white;
+    background: var(--fern);
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+
+  .fivek-date {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--stone);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .fivek-time {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 2.4rem;
+    line-height: 1;
+    color: var(--soil);
+  }
+
+  .fivek-ppm { font-size: 0.8rem; color: var(--trail); margin-top: 4px; font-weight: 500; }
+
+  .fivek-delta {
+    margin-top: 12px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+
+  .fivek-delta.improve { color: var(--moss); }
+  .fivek-delta.baseline { color: var(--stone); }
+  .fivek-delta.decline { color: var(--summit); }
+
+  .fivek-progress-bar {
+    margin-top: 10px;
+    height: 4px;
+    background: var(--fog);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .fivek-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--moss-light), var(--moss));
+    transition: width 1s ease;
+  }
+
+  .fivek-goal-row {
+    margin-top: 6px;
+    font-size: 0.68rem;
+    color: var(--stone);
+    display: flex;
+    justify-content: space-between;
+    letter-spacing: 0.06em;
+  }
+
+  .next-test-card {
+    background: var(--soil);
+    color: var(--fog);
+    border-radius: 6px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .next-test-label { font-size: 0.65rem; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.6; }
+
+  .next-test-date {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--amber-light);
+    line-height: 1;
+  }
+
+  .next-test-in { font-size: 0.8rem; opacity: 0.7; }
+
+  .fivek-actions {
+    position: absolute;
+    bottom: 12px; right: 12px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .fivek-result:hover .fivek-actions { opacity: 1; }
+
+  /* BUTTONS */
+  .btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-primary { background: var(--moss); color: white; }
+  .btn-primary:hover { background: var(--moss-light); }
+  .btn-secondary { background: transparent; border: 1.5px solid var(--stone); color: var(--trail); }
+  .btn-secondary:hover { border-color: var(--trail); color: var(--soil); }
+  .btn-summit { background: var(--summit); color: white; }
+  .btn-summit:hover { opacity: 0.88; }
+
+  .top-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; align-items: center; }
+
+  /* Garmin banner */
+  .garmin-banner {
+    background: linear-gradient(135deg, var(--soil), var(--bark));
+    border-radius: 6px;
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .garmin-banner strong {
+    display: block;
+    color: var(--fog);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .garmin-banner span { color: var(--stone); font-size: 0.75rem; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,18,9,0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: white;
+    border-radius: 8px;
+    padding: 28px 32px 32px;
+    width: 100%;
+    max-width: 560px;
+    box-shadow: 0 20px 60px rgba(26,18,9,0.25);
+    animation: slideUp 0.2s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal h2 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    color: var(--soil);
+    margin-bottom: 16px;
+  }
+
+  /* Activity type selector */
+  .type-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .type-btn {
+    border: 2px solid var(--fog);
+    border-radius: 5px;
+    padding: 10px 8px;
+    cursor: pointer;
+    text-align: center;
+    background: var(--sky);
+    transition: all 0.15s;
+  }
+
+  .type-btn:hover { border-color: var(--stone); }
+
+  .type-btn.active.zone2  { border-color: var(--moss);   background: #EEF6EC; }
+  .type-btn.active.other  { border-color: var(--trail);  background: #F8F4EF; }
+  .type-btn.active.cross  { border-color: var(--slate);  background: #EEF3F6; }
+  .type-btn.active.tempo  { border-color: var(--summit); background: #FEF0EE; }
+
+  .type-btn-icon { font-size: 1.2rem; display: block; margin-bottom: 3px; }
+
+  .type-btn-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--soil);
+    display: block;
+  }
+
+  .type-btn-sub {
+    font-size: 0.62rem;
+    color: var(--stone);
+    display: block;
+    margin-top: 1px;
+    line-height: 1.2;
+  }
+
+  /* Lap table */
+  .lap-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  .lap-table th {
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--stone);
+    font-weight: 600;
+    padding: 4px 6px;
+    text-align: left;
+    border-bottom: 1px solid var(--fog);
+  }
+  .lap-table td { padding: 5px 6px; vertical-align: middle; }
+  .lap-table tr:nth-child(even) td { background: var(--sky); }
+
+  .lap-type-toggle {
+    display: flex;
+    border: 1.5px solid var(--fog);
+    border-radius: 4px;
+    overflow: hidden;
+    width: fit-content;
+  }
+  .lap-type-toggle button {
+    background: none;
+    border: none;
+    padding: 4px 10px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    color: var(--stone);
+    transition: all 0.12s;
+  }
+  .lap-type-toggle button.active-tempo { background: var(--summit); color: white; }
+  .lap-type-toggle button.active-recovery { background: var(--stone); color: white; }
+
+  .lap-pace-input {
+    width: 80px;
+    border: 1.5px solid var(--fog);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: 'Barlow', sans-serif;
+    font-size: 0.88rem;
+    color: var(--soil);
+    background: white;
+    outline: none;
+  }
+  .lap-pace-input:focus { border-color: var(--trail); }
+
+  .lap-remove {
+    background: none;
+    border: none;
+    color: var(--stone);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 2px 4px;
+    border-radius: 3px;
+  }
+  .lap-remove:hover { color: var(--summit); }
+
+  .tempo-avg-display {
+    background: var(--sky);
+    border: 1px solid var(--fog);
+    border-radius: 4px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .tempo-avg-label { font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--trail); font-weight: 600; }
+  .tempo-avg-val { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.2rem; color: var(--summit); }
+
+  .form-row { margin-bottom: 14px; }
+
+  .form-row label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--trail);
+    margin-bottom: 5px;
+  }
+
+  .form-row input, .form-row select {
+    width: 100%;
+    border: 1.5px solid var(--fog);
+    border-radius: 4px;
+    padding: 9px 12px;
+    font-family: 'Barlow', sans-serif;
+    font-size: 0.95rem;
+    color: var(--soil);
+    background: var(--sky);
+    transition: border-color 0.15s;
+    outline: none;
+  }
+
+  .form-row input:focus, .form-row select:focus { border-color: var(--moss); background: white; }
+
+  .form-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+  }
+
+  /* Field groups that show/hide */
+  .field-group { transition: opacity 0.2s; }
+  .field-group.hidden { display: none; }
+
+  /* Zone indicator */
+  .zone-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--fog);
+    border: 1px solid var(--stone);
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--trail);
+    margin-left: 12px;
+    vertical-align: middle;
+  }
+
+  .zone-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); }
+
+  /* Chart legend */
+  .chart-legend {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--trail);
+  }
+
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--stone); }
+  .empty-state p { font-size: 0.85rem; margin-top: 8px; font-weight: 500; }
+  .empty-icon { font-size: 2rem; opacity: 0.4; }
+
+  /* Tooltip hint */
+  .tooltip-hint {
+    display: inline-block;
+    width: 14px; height: 14px;
+    background: var(--stone);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-align: center;
+    line-height: 14px;
+    cursor: help;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <h1>Aerobic <span>Endurance</span><br>Tracking</h1>
+      <p class="subtitle">July 18 · Race Day Tracker</p>
+    </div>
+    <div class="race-info">
+      <div class="countdown-block">
+        <div class="countdown-days" id="countdown-days">—</div>
+        <div class="countdown-label">Days to Race</div>
+      </div>
+      <div class="race-date">Race · Sat Jul 18, 2026</div>
+    </div>
+  </header>
+
+  <!-- ACTIONS -->
+  <div class="top-actions">
+    <button class="btn btn-primary" onclick="openActivityModal()">+ Log Activity</button>
+  </div>
+
+  <!-- WEEKLY VOLUME -->
+  <div class="volume-bar" id="volume-bar">
+    <div class="volume-bar-top">
+      <div class="volume-title">📅 Weekly Mileage Log</div>
+      <div class="volume-stats">
+        <div class="vol-stat">
+          <span class="vol-stat-label">This Week (total)</span>
+          <span class="vol-stat-val" id="vol-this-week">—</span>
+        </div>
+        <div class="vol-stat">
+          <span class="vol-stat-label">This Week (Z2 miles)</span>          <span class="vol-stat-val" id="vol-this-z2">—</span>
+        </div>
+        <div class="vol-stat">
+          <span class="vol-stat-label">Avg / Week (total)</span>
+          <span class="vol-stat-val" id="vol-avg">—</span>
+        </div>
+        <div class="vol-stat">
+          <span class="vol-stat-label">vs Average</span>
+          <span class="vol-stat-val" id="vol-delta">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly table -->
+    <div id="weekly-table-wrap">
+      <div class="weekly-table-header">
+        <span>Week</span>
+        <span>Total Miles</span>
+        <span>Zone 2 Miles</span>
+        <span>Tempo Miles</span>
+        <span>Other Cardio Work</span>
+      </div>
+      <div id="weekly-table-body">
+        <div class="empty-state" style="padding:24px 0;">
+          <div class="empty-icon">📅</div>
+          <p>No activities logged yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI 1: AEROBIC EFFICIENCY -->
+  <div class="section-header">
+    <span class="section-num">KPI 01</span>
+    <span class="section-title">Aerobic Efficiency</span>
+    <span class="section-desc">Pace at Zone 2 <span class="zone-indicator"><span class="zone-dot"></span>130–145 BPM</span></span>
+    <span class="tooltip-hint" title="Zone 2 runs only. Faster pace at the same heart rate = improving aerobic fitness.">?</span>
+  </div>
+
+  <div class="card">
+    <div class="ae-grid">
+      <div class="ae-summary" id="ae-summary">
+        <div class="ae-stat">
+          <span class="ae-stat-label">Avg Pace</span>
+          <span class="ae-stat-val" id="ae-avg-pace">—</span>
+        </div>
+        <div class="ae-stat">
+          <span class="ae-stat-label">Avg Heart Rate</span>
+          <span class="ae-stat-val" id="ae-avg-hr">—</span>
+        </div>
+        <div class="ae-stat" style="border-left:2px solid var(--fog);padding-left:20px;">
+          <span class="ae-stat-label">L4 Avg Pace</span>
+          <span class="ae-stat-val green" id="ae-l4-pace">—</span>
+        </div>
+        <div class="ae-stat">
+          <span class="ae-stat-label">L4 vs All-Time Avg</span>
+          <span class="ae-stat-val" id="ae-l4-delta">—</span>
+        </div>
+        <div class="ae-stat">
+          <span class="ae-stat-label">Z2 Runs Logged</span>
+          <span class="ae-stat-val amber" id="ae-count">0</span>
+        </div>
+        <div class="ae-trend" id="ae-trend" style="display:none; margin-left:auto;">
+          <span class="ae-trend-arrow">↑</span>
+          <div>
+            <div class="ae-trend-text" id="ae-trend-val"></div>
+            <div class="ae-trend-sub">L4 vs all-time avg</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-legend" style="grid-column:1/-1; margin-top:4px;">
+        <span class="legend-item"><span class="legend-dot" style="background:#4A6741;"></span>Pace (min/mi)</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#C8523A;"></span>Avg BPM</span>
+        <span class="legend-item"><span class="legend-dot" style="background:rgba(212,131,10,0.25);border:1.5px solid #D4830A;"></span>Zone 2 Band (130–145)</span>
+      </div>
+      <div class="chart-container" style="grid-column:1/-1; height:220px;">
+        <canvas id="aeChart" style="display:block;width:100%;height:220px;"></canvas>
+      </div>
+    </div>
+
+    <!-- WEEKLY LOG -->
+    <div style="margin-top:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.75rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--trail);">Activity Log</div>
+        <select id="week-selector" onchange="renderWorkouts()" style="font-family:'Barlow',sans-serif;font-size:0.82rem;color:var(--soil);background:white;border:1.5px solid var(--fog);border-radius:4px;padding:6px 10px;cursor:pointer;"></select>
+      </div>
+      <div id="workout-log-body">
+        <div class="empty-state">
+          <div class="empty-icon">🏃</div>
+          <p>No activities logged yet. Hit "Log Activity" to start tracking.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI 2: 5K -->
+  <div class="section-header">
+    <span class="section-num">KPI 02</span>
+    <span class="section-title">5K Time Trial</span>
+    <span class="section-desc">Every 4–6 weeks</span>
+    <span class="tooltip-hint" title="Log your timed 5K efforts every 4–6 weeks to track raw speed improvement over the season.">?</span>
+  </div>
+
+  <div class="card">
+    <div class="chart-legend" id="fivek-legend" style="display:none; gap:20px; margin-bottom:12px; flex-wrap:wrap;">
+      <span class="legend-item"><span class="legend-dot" style="background:#C8523A;"></span>5K Time</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#D4830A;"></span>Avg BPM</span>
+    </div>
+    <div style="display:none; height:180px; position:relative; margin-bottom:24px;" id="fivek-chart-wrap">
+      <canvas id="fivekChart" style="display:block;width:100%;height:180px;"></canvas>
+    </div>
+    <div class="fivek-grid" id="fivek-grid">
+      <div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-icon">⏱</div>
+        <p>No 5K tests logged yet. Hit "Log 5K Test" to record your baseline.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI 3: TEMPO -->
+  <div class="section-header">
+    <span class="section-num">KPI 03</span>
+    <span class="section-title">Tempo Pace</span>
+    <span class="section-desc">Interval avg pace (tempo laps only)</span>
+    <span class="tooltip-hint" title="Tracks your average pace across tempo intervals only — recovery laps excluded. A downward trend means your threshold pace is improving.">?</span>
+  </div>
+
+  <div class="card">
+    <div id="tempo-kpi-stats" style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px;">
+      <div class="ae-stat">
+        <span class="ae-stat-label">Avg Tempo Pace</span>
+        <span class="ae-stat-val" id="t-avg-pace">—</span>
+      </div>
+      <div class="ae-stat">
+        <span class="ae-stat-label">Last Session</span>
+        <span class="ae-stat-val" id="t-last-pace">—</span>
+      </div>
+      <div class="ae-stat" style="border-left:2px solid var(--fog);padding-left:20px;">
+        <span class="ae-stat-label">Sessions Logged</span>
+        <span class="ae-stat-val amber" id="t-count">0</span>
+      </div>
+      <div class="ae-stat">
+        <span class="ae-stat-label">Trend</span>
+        <span class="ae-stat-val" id="t-trend">—</span>
+      </div>
+    </div>
+    <div id="tempo-chart-wrap" style="display:none;height:180px;position:relative;margin-bottom:16px;">
+      <canvas id="tempoChart" style="display:block;width:100%;height:180px;"></canvas>
+    </div>
+
+    <!-- Tempo session log -->
+    <div id="tempo-log-body"></div>
+  </div>
+
+
+<div class="modal-overlay" id="modal-activity">
+  <div class="modal">
+    <h2 id="activity-modal-title">Log Activity</h2>
+
+    <!-- Type selector -->
+    <div class="type-selector" id="type-selector">
+      <div class="type-btn active zone2" data-type="zone2" onclick="setActivityType('zone2')">
+        <span class="type-btn-icon">💚</span>
+        <span class="type-btn-label">Zone 2 Run</span>
+        <span class="type-btn-sub">Feeds KPI 01</span>
+      </div>
+      <div class="type-btn other" data-type="fivek" onclick="setActivityType('fivek')">
+        <span class="type-btn-icon">⏱</span>
+        <span class="type-btn-label">5K Test</span>
+        <span class="type-btn-sub">Feeds KPI 02</span>
+      </div>
+      <div class="type-btn tempo" data-type="tempo" onclick="setActivityType('tempo')">
+        <span class="type-btn-icon">🔥</span>
+        <span class="type-btn-label">Tempo Run</span>
+        <span class="type-btn-sub">Feeds KPI 03</span>
+      </div>
+      <div class="type-btn cross" data-type="other" onclick="setActivityType('other')">
+        <span class="type-btn-icon">🏃</span>
+        <span class="type-btn-label">Other</span>
+        <span class="type-btn-sub">Warm-ups, bike, etc.</span>
+      </div>
+    </div>
+
+    <!-- Other activity label (shown only for Other type) -->
+    <div class="field-group hidden" id="other-label-field">
+      <div class="form-row">
+        <label>Activity Type</label>
+        <input type="text" id="a-other-label" placeholder="e.g. Warm-up, Cycling, Stair Stepper…">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Date</label>
+      <input type="date" id="a-date">
+    </div>
+
+    <!-- Run fields (Zone 2 + Other) -->
+    <div class="field-group" id="run-fields">
+      <div class="form-inline">
+        <div class="form-row">
+          <label>Avg Heart Rate (BPM)</label>
+          <input type="number" id="a-bpm" placeholder="e.g. 138" min="60" max="220">
+        </div>
+        <div class="form-row">
+          <label>Duration (minutes)</label>
+          <input type="number" id="a-duration" placeholder="e.g. 45" min="1">
+        </div>
+      </div>
+      <div class="form-inline">
+        <div class="form-row">
+          <label>Avg Pace — min:sec/mi</label>
+          <input type="text" id="a-pace" placeholder="e.g. 10:30">
+        </div>
+        <div class="form-row">
+          <label>Distance (miles)</label>
+          <input type="number" id="a-dist" placeholder="e.g. 5.2" step="0.1">
+        </div>
+      </div>
+    </div>
+
+    <!-- Tempo-specific fields -->
+    <div class="field-group hidden" id="tempo-fields">
+      <div class="form-inline">
+        <div class="form-row">
+          <label>Total Distance (miles)</label>
+          <input type="number" id="a-tempo-dist" placeholder="e.g. 4.54" step="0.01">
+        </div>
+        <div class="form-row">
+          <label>Avg Heart Rate (BPM)</label>
+          <input type="number" id="a-tempo-bpm" placeholder="e.g. 162" min="60" max="220">
+        </div>
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <label style="display:block;font-size:0.68rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--trail);margin-bottom:8px;">Lap Splits <span style="color:var(--stone);font-weight:400;text-transform:none;letter-spacing:0;">— mark each lap as Tempo or Recovery</span></label>
+        <table class="lap-table" id="lap-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Type</th>
+              <th>Avg Pace (min:sec/mi)</th>
+              <th>Time (mm:ss)</th>
+              <th>Distance (mi)</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="lap-tbody"></tbody>
+        </table>
+        <button type="button" onclick="addLap()" style="font-family:'Barlow',sans-serif;font-size:0.78rem;font-weight:600;color:var(--moss);background:none;border:1.5px dashed var(--fern);border-radius:4px;padding:5px 14px;cursor:pointer;width:100%;margin-bottom:14px;">+ Add Lap</button>
+      </div>
+
+      <div class="tempo-avg-display">
+        <span class="tempo-avg-label">Avg Tempo Pace</span>
+        <span class="tempo-avg-val" id="tempo-avg-display">—</span>
+      </div>
+    </div>
+
+    <!-- 5K-specific fields -->
+    <div class="field-group hidden" id="fivek-fields">
+      <div class="form-inline">
+        <div class="form-row">
+          <label>Finish Time — mm:ss</label>
+          <input type="text" id="a-fivek-time" placeholder="e.g. 26:45">
+        </div>
+        <div class="form-row">
+          <label>Avg Heart Rate (BPM)</label>
+          <input type="number" id="a-fivek-bpm" placeholder="e.g. 162" min="60" max="220">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Surface</label>
+        <select id="a-fivek-surface">
+          <option>Road</option>
+          <option>Trail</option>
+          <option>Track</option>
+          <option>Treadmill</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Notes (optional)</label>
+      <input type="text" id="a-notes" placeholder="conditions, how you felt…">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-primary" id="save-activity-btn" onclick="saveActivity()">Save</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+// activities: { date, type ('zone2'|'other'|'cross'), bpm, duration, pace?, dist?, crossType?, notes }
+// fiveks:     { date, time, bpm, surface, notes }
+let activities = [];
+let fiveks     = [];
+
+async function syncActivities() {
+  try {
+    await fetch('/api/data/tt_activities', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(activities)
+    });
+  } catch(err) { console.warn('Sync failed', err); }
+}
+
+async function syncFiveks() {
+  try {
+    await fetch('/api/data/tt_fiveks', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fiveks)
+    });
+  } catch(err) { console.warn('Sync failed', err); }
+}
+
+async function loadData() {
+  try {
+    const [actsRes, fksRes] = await Promise.all([
+      fetch('/api/data/tt_activities'),
+      fetch('/api/data/tt_fiveks')
+    ]);
+    const serverActs = await actsRes.json();
+    const serverFks  = await fksRes.json();
+
+    if (serverActs.length === 0 && serverFks.length === 0) {
+      // Server empty — migrate any existing localStorage data up
+      const localActs = JSON.parse(localStorage.getItem('tt_activities') || '[]');
+      const localFks  = JSON.parse(localStorage.getItem('tt_fiveks')     || '[]');
+      localActs.forEach(a => activities.push(a));
+      localFks.forEach(f  => fiveks.push(f));
+      if (activities.length > 0 || fiveks.length > 0) {
+        await Promise.all([syncActivities(), syncFiveks()]);
+      }
+    } else {
+      serverActs.forEach(a => activities.push(a));
+      serverFks.forEach(f  => fiveks.push(f));
+    }
+  } catch(err) {
+    // Fallback to localStorage if server unreachable
+    const localActs = JSON.parse(localStorage.getItem('tt_activities') || '[]');
+    const localFks  = JSON.parse(localStorage.getItem('tt_fiveks')     || '[]');
+    localActs.forEach(a => activities.push(a));
+    localFks.forEach(f  => fiveks.push(f));
+  }
+}
+
+// ── EXPORT / IMPORT ───────────────────────────────────────────────────────────
+function exportData() {
+  const data = {
+    activities,
+    fiveks,
+    exported: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `aerobic-tracking-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const acts = data.activities || [];
+      const fks  = data.fiveks     || [];
+      if (acts.length === 0 && fks.length === 0) {
+        alert('No data found in this file.');
+        return;
+      }
+      activities.length = 0;
+      acts.forEach(a => activities.push(a));
+      fiveks.length = 0;
+      fks.forEach(f => fiveks.push(f));
+      await Promise.all([syncActivities(), syncFiveks()]);
+      renderAll();
+      alert(`Imported ${acts.length} activities and ${fks.length} 5K tests successfully!`);
+    } catch(err) {
+      alert('Could not read file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ── COUNTDOWN ────────────────────────────────────────────────────────────────
+function updateCountdown() {
+  var race = new Date('2026-07-18T00:00:00');
+  var today = new Date(); today.setHours(0,0,0,0);
+  var diff = Math.ceil((race - today) / 86400000);
+  var el = document.getElementById('countdown-days');
+  if (el) el.textContent = diff > 0 ? diff : '🏁';
+}
+updateCountdown();
+
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function paceToSecs(pace) {
+  const p = (pace||'').trim().split(':');
+  if (p.length !== 2) return null;
+  const m = parseInt(p[0],10), s = parseInt(p[1],10);
+  if (isNaN(m)||isNaN(s)) return null;
+  return m*60+s;
+}
+
+function secsToPace(secs) {
+  if (!secs) return '—';
+  return `${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`;
+}
+
+function timeToSecs(t) {
+  const p = (t||'').trim().split(':');
+  if (p.length !== 2) return null;
+  return parseInt(p[0],10)*60+parseInt(p[1],10);
+}
+
+function secsToTime(s) {
+  if (!s) return '—';
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+
+function formatDate(d) {
+  return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+
+// Get Monday of the week containing date d
+function weekStart(d) {
+  const dt = new Date(d+'T12:00:00');
+  const day = dt.getDay(); // 0=Sun
+  const diff = (day === 0) ? -6 : 1 - day;
+  dt.setDate(dt.getDate() + diff);
+  return dt.toISOString().split('T')[0];
+}
+
+function weekLabel(ws) {
+  const dt = new Date(ws+'T12:00:00');
+  return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+
+// ── ACTIVITY TYPE STATE ────────────────────────────────────────────────────────
+let currentActivityType = 'zone2';
+let editingActivityIdx = null;
+let editingFivekIdx = null;
+
+function setActivityType(type) {
+  currentActivityType = type;
+  document.querySelectorAll('.type-btn').forEach(b => {
+    b.classList.remove('active','zone2','other','cross','tempo');
+    if (b.dataset.type === type) {
+      const cls = type === 'fivek' ? 'other' : type;
+      b.classList.add('active', cls);
+    }
+  });
+  document.getElementById('run-fields').classList.toggle('hidden',   type === 'fivek' || type === 'tempo');
+  document.getElementById('fivek-fields').classList.toggle('hidden', type !== 'fivek');
+  document.getElementById('tempo-fields').classList.toggle('hidden', type !== 'tempo');
+  document.getElementById('other-label-field').classList.toggle('hidden', type !== 'other');
+  if (type === 'tempo' && document.getElementById('lap-tbody').children.length === 0) {
+    addLap(); addLap(); addLap();
+  }
+}
+
+let lapCounter = 0;
+
+function addLap(lapType = 'tempo', pace = '', time = '', dist = '') {
+  lapCounter++;
+  const id = lapCounter;
+  const tbody = document.getElementById('lap-tbody');
+  const tr = document.createElement('tr');
+  tr.id = `lap-row-${id}`;
+  tr.innerHTML = `
+    <td style="font-size:0.78rem;color:var(--stone);font-weight:600;">${tbody.children.length + 1}</td>
+    <td>
+      <div class="lap-type-toggle">
+        <button id="btn-tempo-${id}" class="active-tempo" onclick="setLapType(${id},'tempo')">Tempo</button>
+        <button id="btn-recovery-${id}" onclick="setLapType(${id},'recovery')">Recovery</button>
+      </div>
+    </td>
+    <td><input class="lap-pace-input" id="lap-pace-${id}" type="text" placeholder="8:10" value="${pace}" oninput="updateLapCalc(${id})"></td>
+    <td><input class="lap-pace-input" id="lap-time-${id}" type="text" placeholder="8:00" value="${time}" oninput="updateLapCalc(${id})" style="width:72px;"></td>
+    <td><span id="lap-dist-${id}" style="font-size:0.85rem;font-weight:600;color:var(--soil);">${dist ? dist + ' mi' : '—'}</span></td>
+    <td><button class="lap-remove" onclick="removeLap(${id})">✕</button></td>
+  `;
+  tr.dataset.lapType = lapType;
+  if (lapType === 'recovery') {
+    setTimeout(() => setLapType(id, 'recovery'), 0);
+  }
+  tbody.appendChild(tr);
+  updateLapNumbers();
+  updateTempoAvg();
+}
+
+function updateLapCalc(id) {
+  const paceVal = (document.getElementById(`lap-pace-${id}`)?.value || '').trim();
+  const timeVal = (document.getElementById(`lap-time-${id}`)?.value || '').trim();
+  const distEl  = document.getElementById(`lap-dist-${id}`);
+  if (!distEl) return;
+
+  const paceSecs = paceToSecs(paceVal);
+  const timeSecs = timeToSecs(timeVal);
+
+  if (paceSecs && timeSecs) {
+    const miles = +(timeSecs / paceSecs).toFixed(2);
+    distEl.textContent = miles + ' mi';
+    distEl.dataset.miles = miles;
+  } else {
+    distEl.textContent = '—';
+    distEl.dataset.miles = '';
+  }
+  updateTempoAvg();
+}
+
+function setLapType(id, type) {
+  const row = document.getElementById(`lap-row-${id}`);
+  if (row) row.dataset.lapType = type;
+  const btnT = document.getElementById(`btn-tempo-${id}`);
+  const btnR = document.getElementById(`btn-recovery-${id}`);
+  if (btnT && btnR) {
+    btnT.className = type === 'tempo' ? 'active-tempo' : '';
+    btnR.className = type === 'recovery' ? 'active-recovery' : '';
+  }
+  // Dim all inputs for recovery laps
+  ['lap-pace-','lap-time-','lap-dist-'].forEach(prefix => {
+    const inp = document.getElementById(prefix + id);
+    if (inp) inp.style.opacity = type === 'recovery' ? '0.4' : '1';
+  });
+  updateTempoAvg();
+}
+
+function removeLap(id) {
+  const row = document.getElementById(`lap-row-${id}`);
+  if (row) row.remove();
+  updateLapNumbers();
+  updateTempoAvg();
+}
+
+function updateLapNumbers() {
+  document.querySelectorAll('#lap-tbody tr').forEach((tr, i) => {
+    tr.cells[0].textContent = i + 1;
+  });
+}
+
+function updateTempoAvg() {
+  const rows = document.querySelectorAll('#lap-tbody tr');
+  const tempoSecs = [];
+  rows.forEach(tr => {
+    if (tr.dataset.lapType === 'tempo') {
+      const inp = tr.querySelector('.lap-pace-input');
+      if (inp && inp.value) {
+        const s = paceToSecs(inp.value.trim());
+        if (s) tempoSecs.push(s);
+      }
+    }
+  });
+  const el = document.getElementById('tempo-avg-display');
+  if (tempoSecs.length > 0) {
+    const avg = Math.round(tempoSecs.reduce((a,b)=>a+b,0)/tempoSecs.length);
+    el.textContent = secsToPace(avg) + '/mi';
+  } else {
+    el.textContent = '—';
+  }
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
+function openActivityModal(editIdx = null) {
+  editingActivityIdx = editIdx;
+  const today = new Date().toISOString().split('T')[0];
+
+  // Always clear lap table
+  document.getElementById('lap-tbody').innerHTML = '';
+  lapCounter = 0;
+
+  if (editIdx !== null) {
+    const a = activities[editIdx];
+    document.getElementById('activity-modal-title').textContent = 'Edit Activity';
+    setActivityType(a.type || 'zone2');
+    document.getElementById('a-date').value = a.date;
+    document.getElementById('a-bpm').value = a.bpm || '';
+    document.getElementById('a-duration').value = a.duration || '';
+    document.getElementById('a-pace').value = a.pace || '';
+    document.getElementById('a-dist').value = a.dist || '';
+    document.getElementById('a-other-label').value = a.otherLabel || '';
+    document.getElementById('a-notes').value = a.notes || '';
+    document.getElementById('a-fivek-time').value = a.fivekTime || '';
+    document.getElementById('a-fivek-bpm').value = a.bpm || '';
+    document.getElementById('a-fivek-surface').value = a.surface || 'Road';
+    if (a.type === 'tempo') {
+      document.getElementById('a-tempo-dist').value = a.dist || '';
+      document.getElementById('a-tempo-bpm').value = a.bpm || '';
+      (a.laps || []).forEach(l => {
+        addLap(l.type, l.pace, l.time || '', l.dist || '');
+        // Trigger calc for last added lap
+        setTimeout(() => updateLapCalc(lapCounter), 0);
+      });
+    }
+  } else {
+    document.getElementById('activity-modal-title').textContent = 'Log Activity';
+    editingFivekIdx = null;
+    setActivityType('zone2');
+    document.getElementById('a-date').value = today;
+    document.getElementById('a-bpm').value = '';
+    document.getElementById('a-duration').value = '';
+    document.getElementById('a-pace').value = '';
+    document.getElementById('a-dist').value = '';
+    document.getElementById('a-other-label').value = '';
+    document.getElementById('a-notes').value = '';
+    document.getElementById('a-fivek-time').value = '';
+    document.getElementById('a-fivek-bpm').value = '';
+    document.getElementById('a-fivek-surface').value = 'Road';
+    document.getElementById('a-tempo-dist').value = '';
+    document.getElementById('a-tempo-bpm').value = '';
+  }
+
+  document.getElementById('modal-activity').classList.add('open');
+}
+
+
+
+
+function closeModals() {
+  document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) closeModals(); });
+});
+
+// ── SAVE ACTIVITY ─────────────────────────────────────────────────────────────
+function saveActivity() {
+  const date  = document.getElementById('a-date').value;
+  const notes = document.getElementById('a-notes').value;
+  const type  = currentActivityType;
+
+  if (!date) { alert('Please enter a date.'); return; }
+
+  // 5K Test — save to fiveks array
+  if (type === 'fivek') {
+    const time    = document.getElementById('a-fivek-time').value.trim();
+    const bpm     = document.getElementById('a-fivek-bpm').value;
+    const surface = document.getElementById('a-fivek-surface').value;
+    if (!time) { alert('Please enter a finish time.'); return; }
+    if (!timeToSecs(time)) { alert('Time format should be MM:SS (e.g. 26:45)'); return; }
+    const entry = { date, time, bpm: bpm ? parseInt(bpm) : null, surface, notes };
+    if (editingFivekIdx !== null) {
+      fiveks[editingFivekIdx] = entry;
+      editingFivekIdx = null;
+    } else {
+      fiveks.push(entry);
+    }
+    syncFiveks();
+    closeModals();
+    renderFiveks();
+    return;
+  }
+
+  // Tempo Run
+  if (type === 'tempo') {
+    const dist = document.getElementById('a-tempo-dist').value;
+    const bpm  = document.getElementById('a-tempo-bpm').value;
+    const rows = document.querySelectorAll('#lap-tbody tr');
+    const laps = [];
+    rows.forEach(tr => {
+      const paceInp = tr.querySelector('.lap-pace-input');
+      const lapId   = tr.id.replace('lap-row-','');
+      const timeInp = document.getElementById('lap-time-' + lapId);
+      const distEl  = document.getElementById('lap-dist-' + lapId);
+      laps.push({
+        type: tr.dataset.lapType,
+        pace: paceInp ? paceInp.value.trim() : '',
+        time: timeInp ? timeInp.value.trim() : '',
+        dist: distEl && distEl.dataset.miles ? parseFloat(distEl.dataset.miles) : null
+      });
+    });
+    const tempoLaps = laps.filter(l => l.type === 'tempo' && l.pace && paceToSecs(l.pace));
+    if (tempoLaps.length === 0) { alert('Please add at least one tempo lap with a valid pace.'); return; }
+    const avgTempoSecs = Math.round(tempoLaps.reduce((s,l)=>s+paceToSecs(l.pace),0)/tempoLaps.length);
+    const entry = {
+      date, type: 'tempo',
+      laps,
+      avgTempoPace: secsToPace(avgTempoSecs),
+      tempoLapCount: tempoLaps.length,
+      dist: dist ? parseFloat(dist) : null,
+      bpm:  bpm  ? parseInt(bpm)   : null,
+      notes
+    };
+    if (editingActivityIdx !== null) {
+      activities[editingActivityIdx] = entry;
+      editingActivityIdx = null;
+    } else {
+      activities.push(entry);
+    }
+    syncActivities();
+    closeModals();
+    renderAll();
+    return;
+  }
+  const bpm      = document.getElementById('a-bpm').value;
+  const duration = document.getElementById('a-duration').value;
+  const pace     = document.getElementById('a-pace').value.trim();
+  const dist     = document.getElementById('a-dist').value;
+
+  if (pace && !paceToSecs(pace)) { alert('Pace format should be M:SS (e.g. 10:30)'); return; }
+
+  const entry = {
+    date, type,
+    bpm:        bpm      ? parseInt(bpm)      : null,
+    duration:   duration ? parseInt(duration) : null,
+    pace:       pace     || null,
+    dist:       dist     ? parseFloat(dist)   : null,
+    otherLabel: type === 'other' ? (document.getElementById('a-other-label').value.trim() || null) : null,
+    notes
+  };
+
+  if (editingActivityIdx !== null) {
+    activities[editingActivityIdx] = entry;
+    editingActivityIdx = null;
+  } else {
+    activities.push(entry);
+  }
+
+  syncActivities();
+  closeModals();
+  renderAll();
+}
+
+
+// ── DELETE ────────────────────────────────────────────────────────────────────
+function deleteActivity(idx) {
+  if (!confirm('Delete this activity?')) return;
+  activities.splice(idx, 1);
+  syncActivities();
+  renderAll();
+}
+
+function deleteFivek(idx) {
+  if (!confirm('Delete this 5K test?')) return;
+  fiveks.splice(idx, 1);
+  syncFiveks();
+  renderFiveks();
+}
+
+// ── FIVEK EDIT ────────────────────────────────────────────────────────────────
+function editFivek(idx) {
+  // Open the activity modal pre-filled with fivek data
+  editingActivityIdx = null;
+  editingFivekIdx = idx;
+  const f = fiveks[idx];
+  document.getElementById('activity-modal-title').textContent = 'Edit 5K Test';
+  setActivityType('fivek');
+  document.getElementById('a-date').value = f.date;
+  document.getElementById('a-fivek-time').value = f.time;
+  document.getElementById('a-fivek-bpm').value = f.bpm || '';
+  document.getElementById('a-fivek-surface').value = f.surface || 'Road';
+  document.getElementById('a-notes').value = f.notes || '';
+  document.getElementById('modal-activity').classList.add('open');
+}
+
+function renderWeeklyVolume() {
+  // Build week map — classify by logged type, not HR
+  const weekMap = {};
+  activities.forEach(a => {
+    const ws = weekStart(a.date);
+    if (!weekMap[ws]) weekMap[ws] = { totalmi: 0, z2mi: 0, tempomi: 0, otherz2min: 0 };
+    const dist = a.dist ? parseFloat(a.dist) : 0;
+    const dur  = a.duration ? parseInt(a.duration) : 0;
+    const isRun = dist > 0;
+
+    if (isRun) {
+      weekMap[ws].totalmi += dist;
+      if (a.type === 'zone2')             weekMap[ws].z2mi    += dist;
+      else if (a.type === 'tempo')        weekMap[ws].tempomi += dist;
+      // 'other' runs just add to total
+    } else {
+      // No distance — count duration toward cardio minutes
+      if (dur > 0) weekMap[ws].otherz2min += dur;
+    }
+  });
+
+  // Add 5K test miles (3.107 mi each) — count as tempo
+  fiveks.forEach(f => {
+    const ws = weekStart(f.date);
+    if (!weekMap[ws]) weekMap[ws] = { totalmi: 0, z2mi: 0, tempomi: 0, otherz2min: 0 };
+    weekMap[ws].totalmi  += 3.107;
+    weekMap[ws].tempomi  += 3.107;
+  });
+
+  const weeks = Object.keys(weekMap).sort().reverse();
+  const thisWeekKey = weekStart(new Date().toISOString().split('T')[0]);
+
+  // Summary stats
+  const thisWeek = weekMap[thisWeekKey] || { totalmi:0, z2mi:0, tempomi:0, otherz2min:0 };
+  const pastWeeks = Object.keys(weekMap).filter(w => w < thisWeekKey);
+  const avgMiles = pastWeeks.length
+    ? +(pastWeeks.reduce((s,w) => s + weekMap[w].totalmi, 0) / pastWeeks.length).toFixed(1)
+    : null;
+  const delta = avgMiles !== null ? +(thisWeek.totalmi - avgMiles).toFixed(1) : null;
+
+  document.getElementById('vol-this-week').textContent = thisWeek.totalmi.toFixed(1) + ' mi';
+  document.getElementById('vol-this-z2').textContent   = thisWeek.z2mi.toFixed(1) + ' mi';
+  document.getElementById('vol-avg').textContent = avgMiles !== null ? avgMiles + ' mi' : '—';
+
+  const deltaEl = document.getElementById('vol-delta');
+  if (delta !== null) {
+    deltaEl.textContent = (delta >= 0 ? '+' : '') + delta + ' mi';
+    deltaEl.className   = 'vol-stat-val ' + (delta >= 0 ? 'green' : 'red');
+  } else {
+    deltaEl.textContent = '—';
+    deltaEl.className   = 'vol-stat-val';
+  }
+
+  // Build table
+  const body = document.getElementById('weekly-table-body');
+  if (weeks.length === 0) {
+    body.innerHTML = `<div class="empty-state" style="padding:24px 0;"><div class="empty-icon">📅</div><p>No activities logged yet.</p></div>`;
+    return;
+  }
+
+  body.innerHTML = weeks.map(ws => {
+    const d = weekMap[ws];
+    const isCurrent = ws === thisWeekKey;
+    const dt = new Date(ws + 'T12:00:00');
+    const label = `Week of ${dt.getMonth()+1}/${dt.getDate()}/${dt.getFullYear()}`;
+
+    const vsAvg = avgMiles !== null ? +(d.totalmi - avgMiles).toFixed(1) : null;
+    let totalCell = `<strong>${d.totalmi.toFixed(1)} mi</strong>`;
+    if (!isCurrent && vsAvg !== null && Math.abs(vsAvg) >= 0.1) {
+      const cls = vsAvg > 0 ? 'color:var(--moss)' : 'color:var(--summit)';
+      totalCell += ` <span style="font-size:0.72rem;${cls};">${vsAvg > 0 ? '+' : ''}${vsAvg}</span>`;
+    }
+    if (isCurrent) totalCell += ` <span style="font-size:0.68rem;color:var(--stone);font-weight:400;">in progress</span>`;
+
+    return `
+      <div class="weekly-table-row ${isCurrent ? 'current-week' : ''}">
+        <span class="week-label" style="font-size:0.82rem;">${label}</span>
+        <span>${totalCell}</span>
+        <span style="color:var(--moss);font-weight:600;">${d.z2mi > 0 ? d.z2mi.toFixed(1) + ' mi' : '—'}</span>
+        <span style="color:var(--summit);font-weight:600;">${d.tempomi > 0 ? d.tempomi.toFixed(1) + ' mi' : '—'}</span>
+        <span style="color:var(--slate);">${d.otherz2min > 0 ? d.otherz2min + ' min' : '—'}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+
+// ── AE CHART ──────────────────────────────────────────────────────────────────
+let aeChart = null;
+
+function buildAeChart() {
+  const canvasAe = document.getElementById('aeChart');
+  canvasAe.width  = canvasAe.parentElement.offsetWidth || 800;
+  canvasAe.height = 220;
+  const ctx = canvasAe.getContext('2d');
+  const zone2 = activities.filter(a => a.type === 'zone2' && a.pace)
+                           .sort((a,b) => a.date.localeCompare(b.date));
+
+  if (aeChart) aeChart.destroy();
+
+  if (zone2.length === 0) {
+    aeChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: ['No Zone 2 data yet'], datasets: [{ data: [] }] },
+      options: { plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: '#B8A99A' }, grid: { color: '#F5F1EC' } }, y: { display: false } } }
+    });
+    return;
+  }
+
+  const labels  = zone2.map(w => formatDate(w.date));
+  const paces   = zone2.map(w => paceToSecs(w.pace));
+  const bpms    = zone2.map(w => w.bpm || null);
+  const Z2_MID = 137, Z2_LO = 130, Z2_HI = 145, Z2_HALF = 7.5;
+  const z2Upper = zone2.map(() => Z2_HI);
+  const z2Lower = zone2.map(() => Z2_LO);
+
+  // Zone lock (kept for BPM tooltip logic only)
+  const validBpms = bpms.filter(b => b !== null);
+  const latestBpm = validBpms.length ? validBpms[validBpms.length-1] : null;
+
+  aeChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'Pace', data:paces, borderColor:'#4A6741', backgroundColor:'rgba(74,103,65,0.07)',
+          pointBackgroundColor:'#4A6741', pointBorderColor:'white', pointBorderWidth:2, pointRadius:6,
+          tension:0.3, fill:true, borderWidth:2.5, yAxisID:'yPace' },
+        { label:'BPM', data:bpms, borderColor:'#C8523A', backgroundColor:'rgba(200,82,58,0)',
+          pointBackgroundColor:'#C8523A', pointBorderColor:'white', pointBorderWidth:2, pointRadius:6,
+          tension:0.3, fill:false, borderWidth:2, borderDash:[5,3], yAxisID:'yBpm', order:1 },
+        { label:'Z2 Upper', data:z2Upper, borderColor:'rgba(212,131,10,0.35)', backgroundColor:'rgba(212,131,10,0.10)',
+          pointRadius:0, borderWidth:1, borderDash:[3,3], fill:'+1', tension:0, yAxisID:'yBpm', order:3 },
+        { label:'Z2 Lower', data:z2Lower, borderColor:'rgba(212,131,10,0.35)', backgroundColor:'rgba(212,131,10,0)',
+          pointRadius:0, borderWidth:1, borderDash:[3,3], fill:false, tension:0, yAxisID:'yBpm', order:4 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins: {
+        legend:{ display:false },
+        tooltip:{
+          filter: item => item.dataset.label === 'Pace' || item.dataset.label === 'BPM',
+          callbacks:{
+            label: item => {
+              if (item.dataset.label==='Pace') return `Pace: ${secsToPace(item.parsed.y)}/mi`;
+              const bpm=item.parsed.y;
+              const inZone=bpm>=Z2_LO&&bpm<=Z2_HI;
+              const pct=Math.max(0,Math.round((1-Math.abs(bpm-Z2_MID)/Z2_HALF)*100));
+              return `Heart Rate: ${bpm} bpm  (${inZone?'✓ Zone 2 · '+pct+'% lock':'⚠ outside Zone 2'})`;
+            }
+          },
+          backgroundColor:'#2C1810', titleColor:'#E8E0D8', bodyColor:'#F0A830', padding:10, cornerRadius:4,
+        }
+      },
+      scales:{
+        x:{ ticks:{color:'#8B6347',font:{family:'Barlow',size:11}}, grid:{color:'#F5F1EC'} },
+        yPace:{ type:'linear', position:'left', reverse:true,
+          ticks:{color:'#4A6741',font:{family:'Barlow',size:11},callback:v=>secsToPace(v)}, grid:{color:'#F5F1EC'} },
+        yBpm:{ type:'linear', position:'right',
+          ticks:{color:'#C8523A',font:{family:'Barlow',size:11},callback:v=>v+' bpm'}, grid:{drawOnChartArea:false} }
+      }
+    }
+  });
+}
+
+// ── RENDER WORKOUTS / ACTIVITY LOG ────────────────────────────────────────────
+function renderWorkouts() {
+  const sorted = [...activities].sort((a,b)=>b.date.localeCompare(a.date));
+  const body = document.getElementById('workout-log-body');
+
+  // Zone 2 runs only for AE stats
+  const z2 = activities.filter(a=>a.type==='zone2'&&a.pace).sort((a,b)=>a.date.localeCompare(b.date));
+
+  // ── Compute KPIs ──
+  const allPaceSecs = z2.map(w => paceToSecs(w.pace));
+  const allBpms     = z2.map(w => w.bpm).filter(Boolean);
+
+  const allTimeAvgSecs = allPaceSecs.length
+    ? Math.round(allPaceSecs.reduce((s,v)=>s+v,0) / allPaceSecs.length) : null;
+  const avgHr = allBpms.length
+    ? Math.round(allBpms.reduce((s,v)=>s+v,0) / allBpms.length) : null;
+
+  const l4 = z2.slice(-4);
+  const l4PaceSecs = l4.map(w => paceToSecs(w.pace));
+  const l4AvgSecs  = l4PaceSecs.length
+    ? Math.round(l4PaceSecs.reduce((s,v)=>s+v,0) / l4PaceSecs.length) : null;
+
+  // L4 delta vs all-time avg (negative = faster = improvement)
+  let l4DeltaPct = null;
+  if (l4AvgSecs !== null && allTimeAvgSecs !== null && allTimeAvgSecs > 0) {
+    l4DeltaPct = +((l4AvgSecs - allTimeAvgSecs) / allTimeAvgSecs * 100).toFixed(1);
+  }
+
+  // Update stat elements
+  const avgPaceEl = document.getElementById('ae-avg-pace');
+  avgPaceEl.textContent = allTimeAvgSecs ? secsToPace(allTimeAvgSecs)+'/mi' : '—';
+
+  const avgHrEl = document.getElementById('ae-avg-hr');
+  avgHrEl.textContent = avgHr ? avgHr+' bpm' : '—';
+
+  const l4PaceEl = document.getElementById('ae-l4-pace');
+  l4PaceEl.textContent = l4AvgSecs ? secsToPace(l4AvgSecs)+'/mi' : '—';
+  l4PaceEl.className = 'ae-stat-val' + (l4DeltaPct !== null ? (l4DeltaPct < 0 ? ' green' : ' summit') : '');
+  if (l4DeltaPct !== null) l4PaceEl.style.color = l4DeltaPct < 0 ? '' : 'var(--summit)';
+
+  const l4DeltaEl = document.getElementById('ae-l4-delta');
+  if (l4DeltaPct !== null) {
+    const faster = l4DeltaPct < 0;
+    l4DeltaEl.textContent = (faster ? '▲ ' : '▼ ') + Math.abs(l4DeltaPct) + '%' + (faster ? ' faster' : ' slower');
+    l4DeltaEl.className = 'ae-stat-val';
+    l4DeltaEl.style.color = faster ? 'var(--moss)' : 'var(--summit)';
+  } else {
+    l4DeltaEl.textContent = z2.length < 2 ? 'Need 2+ runs' : '—';
+    l4DeltaEl.className = 'ae-stat-val';
+    l4DeltaEl.style.color = 'var(--stone)';
+    l4DeltaEl.style.fontSize = '0.9rem';
+  }
+
+  document.getElementById('ae-count').textContent = z2.length;
+
+  // Trend pill (L4 vs all-time)
+  const trendEl = document.getElementById('ae-trend');
+  if (l4DeltaPct !== null && z2.length > 4 && Math.abs(l4DeltaPct) > 0) {
+    const faster = l4DeltaPct < 0;
+    trendEl.style.display = 'flex';
+    trendEl.querySelector('.ae-trend-arrow').textContent = faster ? '↑' : '↓';
+    trendEl.style.background  = faster ? '#F0F7EE' : '#FEF0EE';
+    trendEl.style.borderColor = faster ? 'var(--fern)' : 'var(--summit)';
+    trendEl.querySelector('.ae-trend-arrow').style.color = faster ? 'var(--moss)' : 'var(--summit)';
+    document.getElementById('ae-trend-val').textContent = Math.abs(l4DeltaPct) + '% ' + (faster ? 'faster' : 'slower');
+    document.getElementById('ae-trend-val').style.color = faster ? 'var(--moss)' : 'var(--summit)';
+  } else {
+    trendEl.style.display = 'none';
+  }
+
+  if (sorted.length === 0 && fiveks.length === 0) {
+    body.innerHTML = `<div class="empty-state"><div class="empty-icon">🏃</div><p>No activities logged yet. Hit "Log Activity" to start tracking.</p></div>`;
+    buildAeChart();
+    return;
+  }
+
+  // Merge fiveks into activities for display
+  const fivekRows = fiveks.map((f, i) => ({ ...f, _isFivek: true, _fivekIdx: i }));
+  const allEntries = [
+    ...activities.map((a, i) => ({ ...a, _actIdx: i })),
+    ...fivekRows
+  ];
+
+  // Collect all weeks that have data
+  const thisWeekKey = weekStart(new Date().toISOString().split('T')[0]);
+  const allWeekKeys = [...new Set(allEntries.map(a => weekStart(a.date)))].sort().reverse();
+
+  // Populate week selector
+  const selector = document.getElementById('week-selector');
+  const prevVal = selector.value;
+  selector.innerHTML = allWeekKeys.map(ws => {
+    const dt = new Date(ws + 'T12:00:00');
+    const label = ws === thisWeekKey
+      ? `This Week (${dt.getMonth()+1}/${dt.getDate()}/${dt.getFullYear()})`
+      : `Week of ${dt.getMonth()+1}/${dt.getDate()}/${dt.getFullYear()}`;
+    return `<option value="${ws}">${label}</option>`;
+  }).join('');
+
+  // Default to current week, or restore previous selection if still valid
+  if (prevVal && allWeekKeys.includes(prevVal)) {
+    selector.value = prevVal;
+  } else {
+    selector.value = allWeekKeys.includes(thisWeekKey) ? thisWeekKey : allWeekKeys[0];
+  }
+
+  const selectedWeek = selector.value;
+
+  // Filter entries to selected week only
+  const weekEntries = allEntries.filter(a => weekStart(a.date) === selectedWeek);
+
+  // Group by date
+  const dayMap = {};
+  weekEntries.forEach(a => {
+    if (!dayMap[a.date]) dayMap[a.date] = [];
+    dayMap[a.date].push(a);
+  });
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const baselineSecs = l4AvgSecs;
+  const typeLabels  = { zone2:'Zone 2', other:'Other', fivek:'5K Test', tempo:'Tempo Run' };
+  const typeClasses = { zone2:'zone2', other:'other', fivek:'other', tempo:'other' };
+
+  // Compute week summary
+  const totalMi = +weekEntries.reduce((s, a) => s + (a._isFivek ? 3.107 : (a.dist ? parseFloat(a.dist) : 0)), 0).toFixed(1);
+  const z2mi = +weekEntries.filter(a => !a._isFivek && a.type === 'zone2' && a.dist)
+    .reduce((s, a) => s + parseFloat(a.dist), 0).toFixed(1);
+  const totalMin = weekEntries.filter(a => !a._isFivek && !a.dist && a.duration)
+    .reduce((s, a) => s + parseInt(a.duration), 0);
+
+  const chips = [
+    totalMi > 0 ? `<span>${totalMi} mi total</span>` : '',
+    z2mi > 0 ? `<span style="color:var(--fern);">${z2mi} mi Z2</span>` : '',
+    totalMin > 0 ? `<span>${totalMin} min cardio</span>` : '',
+  ].filter(Boolean).join('<span style="opacity:0.3;margin:0 2px;">·</span>');
+
+  // Build Mon→Sun rows for selected week
+  const dayRows = DAYS.map((dayName, di) => {
+    const dt = new Date(selectedWeek + 'T12:00:00');
+    dt.setDate(dt.getDate() + di);
+    const dateStr = dt.toISOString().split('T')[0];
+    const dayEntries = dayMap[dateStr] || [];
+    const isToday = dateStr === todayStr;
+    const isFuture = dateStr > todayStr;
+    const dateLabel = `${dt.getMonth()+1}/${dt.getDate()}`;
+    const labelClass = `day-label${isToday ? ' today' : ''}`;
+
+    let activitiesHtml = '';
+    if (dayEntries.length === 0) {
+      activitiesHtml = isFuture ? '' : `<div class="day-rest">rest</div>`;
+    } else {
+      activitiesHtml = dayEntries.map(a => {
+        if (a._isFivek) {
+          const pacePer = secsToTime(Math.round(timeToSecs(a.time) / 3.107));
+          return `
+            <div class="activity-entry">
+              <span><span class="type-tag other" style="background:#FEF0EE;color:var(--summit);border-color:#F5C0B0;">5K Test</span></span>
+              <span><span class="pace-badge">${a.time}</span> <span style="font-size:0.72rem;color:var(--stone);">finish · ${pacePer}/mi</span></span>
+              <span style="font-size:0.82rem;color:var(--trail);">${a.bpm ? a.bpm+' bpm' : '—'}</span>
+              <span style="font-size:0.82rem;">3.1 mi</span>
+              <span></span>
+              <span class="row-actions">
+                <button class="icon-btn" onclick="editFivek(${a._fivekIdx})" title="Edit">✏️</button>
+                <button class="icon-btn delete" onclick="deleteFivek(${a._fivekIdx})" title="Delete">✕</button>
+              </span>
+            </div>`;
+        }
+
+        const realIdx   = a._actIdx;
+        const typeLabel = a.type === 'other' && a.otherLabel ? a.otherLabel : (typeLabels[a.type] || a.type);
+        const typeClass = typeClasses[a.type] || 'other';
+
+        let paceCell = '—';
+        if (a.type === 'tempo') {
+          paceCell = a.avgTempoPace
+            ? `<span class="pace-badge">${a.avgTempoPace}<span style="font-size:0.7rem;color:var(--stone);font-weight:400;">/mi tempo avg</span></span>`
+            + (a.tempoLapCount ? ` <span style="font-size:0.72rem;color:var(--stone);">${a.tempoLapCount} intervals</span>` : '')
+            : '—';
+        } else if (a.pace) {
+          paceCell = `<span class="pace-badge">${a.pace}<span style="font-size:0.7rem;color:var(--stone);font-weight:400;">/mi</span></span>`;
+          if (a.duration) paceCell += ` <span style="font-size:0.72rem;color:var(--stone);">${a.duration} min</span>`;
+        } else if (a.duration) {
+          paceCell = `<span style="font-size:0.85rem;color:var(--soil);font-weight:600;">${a.duration} min</span>`;
+        }
+
+        let pillHtml = '';
+        if (a.type === 'zone2' && a.pace && baselineSecs) {
+          const wSecs = paceToSecs(a.pace);
+          const delta = baselineSecs - wSecs;
+          const pct   = +((Math.abs(delta)/baselineSecs)*100).toFixed(1);
+          if (Math.abs(delta) < 3) pillHtml = `<span class="delta-pill baseline">≈ avg</span>`;
+          else if (delta > 0)      pillHtml = `<span class="delta-pill improve">↑ ${pct}%</span>`;
+          else                     pillHtml = `<span class="delta-pill decline">↓ ${pct}%</span>`;
+        }
+
+        return `
+          <div class="activity-entry">
+            <span><span class="type-tag ${typeClass}">${typeLabel}</span></span>
+            <span>${paceCell}</span>
+            <span style="font-size:0.82rem;color:var(--trail);">${a.bpm ? a.bpm+' bpm' : '—'}</span>
+            <span style="font-size:0.82rem;">${a.dist ? a.dist+' mi' : '—'}</span>
+            <span>${pillHtml}</span>
+            <span class="row-actions">
+              <button class="icon-btn" onclick="openActivityModal(${realIdx})" title="Edit">✏️</button>
+              <button class="icon-btn delete" onclick="deleteActivity(${realIdx})" title="Delete">✕</button>
+            </span>
+          </div>`;
+      }).join('');
+    }
+
+    return `
+      <div class="day-row${dayEntries.length === 0 ? ' rest-day' : ''}">
+        <div class="${labelClass}">
+          <span class="day-name">${dayName}</span>
+          <span class="day-date">${dateLabel}</span>
+        </div>
+        <div class="day-activities">${activitiesHtml}</div>
+      </div>`;
+  }).join('');
+
+  body.innerHTML = `
+    <div class="week-block">
+      <div class="activity-entry-header">
+        <span>Type</span>
+        <span>Pace / Duration</span>
+        <span>Avg BPM</span>
+        <span>Distance</span>
+        <span>vs L4 Avg</span>
+        <span></span>
+      </div>
+      ${dayRows}
+    </div>`;
+
+  buildAeChart();
+}
+
+// ── FIVEK CHART ───────────────────────────────────────────────────────────────
+let fivekChart = null;
+
+function buildFivekChart() {
+  const sorted = [...fiveks].sort((a,b)=>a.date.localeCompare(b.date));
+  const wrap   = document.getElementById('fivek-chart-wrap');
+  const legend = document.getElementById('fivek-legend');
+
+  if (sorted.length < 2) {
+    wrap.style.display = 'none';
+    legend.style.display = 'none';
+    if (fivekChart) { fivekChart.destroy(); fivekChart = null; }
+    return;
+  }
+
+  wrap.style.display = 'block';
+  wrap.style.height  = '180px';
+  legend.style.display = 'flex';
+
+  const canvasFk = document.getElementById('fivekChart');
+  canvasFk.width  = canvasFk.parentElement.offsetWidth || 800;
+  canvasFk.height = 180;
+  const ctx = canvasFk.getContext('2d');
+  if (fivekChart) fivekChart.destroy();
+
+  const labels = sorted.map(f => formatDate(f.date));
+  const times  = sorted.map(f => timeToSecs(f.time));
+  const bpms   = sorted.map(f => f.bpm || null);
+
+  fivekChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'5K Time', data:times, borderColor:'#C8523A', backgroundColor:'rgba(200,82,58,0.07)',
+          pointBackgroundColor:'#C8523A', pointBorderColor:'white', pointBorderWidth:2, pointRadius:7,
+          tension:0.3, fill:true, borderWidth:2.5, yAxisID:'yTime' },
+        { label:'Avg BPM', data:bpms, borderColor:'#D4830A', backgroundColor:'rgba(212,131,10,0)',
+          pointBackgroundColor:'#D4830A', pointBorderColor:'white', pointBorderWidth:2, pointRadius:7,
+          tension:0.3, fill:false, borderWidth:2, borderDash:[5,3], yAxisID:'yBpm' }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins: {
+        legend:{ display:false },
+        tooltip:{
+          callbacks:{
+            label: item => item.dataset.yAxisID==='yTime'
+              ? `5K Time: ${secsToTime(item.parsed.y)}`
+              : `Heart Rate: ${item.parsed.y} bpm`
+          },
+          backgroundColor:'#2C1810', titleColor:'#E8E0D8', bodyColor:'#F0A830', padding:10, cornerRadius:4,
+        }
+      },
+      scales:{
+        x:{ ticks:{color:'#8B6347',font:{family:'Barlow',size:11}}, grid:{color:'#F5F1EC'} },
+        yTime:{ type:'linear', position:'left', reverse:true,
+          ticks:{color:'#C8523A',font:{family:'Barlow',size:11},callback:v=>secsToTime(v)}, grid:{color:'#F5F1EC'} },
+        yBpm:{ type:'linear', position:'right',
+          ticks:{color:'#D4830A',font:{family:'Barlow',size:11},callback:v=>v+' bpm'}, grid:{drawOnChartArea:false} }
+      }
+    }
+  });
+}
+
+// ── RENDER 5K ─────────────────────────────────────────────────────────────────
+function renderFiveks() {
+  const sorted = [...fiveks].sort((a,b)=>a.date.localeCompare(b.date));
+  const grid = document.getElementById('fivek-grid');
+
+  if (sorted.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">⏱</div><p>No 5K tests logged yet. Hit "Log 5K Test" to record your baseline.</p></div>`;
+    buildFivekChart();
+    return;
+  }
+
+  const baselineSecs = timeToSecs(sorted[0].time);
+  const lastDate = new Date(sorted[sorted.length-1].date+'T12:00:00');
+  const nextDate = new Date(lastDate);
+  nextDate.setDate(nextDate.getDate()+35);
+  const daysUntil = Math.ceil((nextDate - new Date())/86400000);
+
+  let html = sorted.map((f, i) => {
+    const realIdx = fiveks.indexOf(f);
+    const secs    = timeToSecs(f.time);
+    const delta   = baselineSecs - secs;
+    const isLatest = i === sorted.length-1;
+    const deltaStr = i===0 ? 'Baseline' : (delta>0?`↑ −${secsToTime(delta)} faster`:delta<0?`↓ +${secsToTime(Math.abs(delta))} slower`:'No change');
+    const deltaClass = delta>0?'improve':(delta<0?'decline':'baseline');
+    const goalSecs = Math.round(baselineSecs*0.82);
+    const progressPct = i===0?0:Math.min(100,Math.round(delta/(baselineSecs-goalSecs)*100));
+    const pacePer = secsToTime(Math.round(secs/3.107));
+
+    return `
+      <div class="fivek-result ${isLatest?'latest':''}">
+        <div class="fivek-date">${formatDate(f.date)} · ${f.surface}</div>
+        <div class="fivek-time">${f.time}</div>
+        <div class="fivek-ppm">${pacePer}/mi pace${f.bpm?` &nbsp;·&nbsp; <span style="color:var(--summit);font-weight:600;">♥ ${f.bpm} bpm</span>`:''}</div>
+        <div class="fivek-delta ${deltaClass}">${deltaStr}</div>
+        ${i>0?`<div class="fivek-progress-bar"><div class="fivek-progress-fill" style="width:${progressPct}%"></div></div><div class="fivek-goal-row"><span>Baseline</span><span>Goal (−18%)</span></div>`:''}
+        <div class="fivek-actions">
+          <button class="icon-btn" onclick="editFivek(${realIdx})" title="Edit">✏️</button>
+          <button class="icon-btn delete" onclick="deleteFivek(${realIdx})" title="Delete">✕</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  html += `
+    <div class="next-test-card">
+      <div class="next-test-label">Suggested Next Test</div>
+      <div class="next-test-date">${nextDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+      <div class="next-test-in">${daysUntil>0?`in ${daysUntil} days`:'Due now!'}</div>
+      <div style="margin-top:8px;font-size:0.7rem;opacity:0.5;letter-spacing:0.08em;">~5 weeks from last test</div>
+    </div>
+  `;
+
+  grid.innerHTML = html;
+  buildFivekChart();
+}
+
+// ── RENDER TEMPO KPI ──────────────────────────────────────────────────────────
+let tempoChart = null;
+
+function renderTempo() {
+  const tempoSessions = activities
+    .filter(a => a.type === 'tempo' && a.avgTempoPace)
+    .sort((a,b) => a.date.localeCompare(b.date));
+
+  const count = tempoSessions.length;
+  document.getElementById('t-count').textContent = count;
+
+  if (count === 0) {
+    document.getElementById('t-avg-pace').textContent = '—';
+    document.getElementById('t-last-pace').textContent = '—';
+    document.getElementById('t-trend').textContent = '—';
+    document.getElementById('tempo-chart-wrap').style.display = 'none';
+    document.getElementById('tempo-log-body').innerHTML = `<div class="empty-state"><div class="empty-icon">🔥</div><p>No tempo sessions logged yet.</p></div>`;
+    if (tempoChart) { tempoChart.destroy(); tempoChart = null; }
+    return;
+  }
+
+  // KPI stats
+  const allSecs = tempoSessions.map(s => paceToSecs(s.avgTempoPace));
+  const avgSecs = Math.round(allSecs.reduce((a,b)=>a+b,0)/allSecs.length);
+  const lastSecs = allSecs[allSecs.length-1];
+  document.getElementById('t-avg-pace').textContent = secsToPace(avgSecs) + '/mi';
+  document.getElementById('t-last-pace').textContent = secsToPace(lastSecs) + '/mi';
+
+  // Trend: compare last session to overall avg
+  const trendEl = document.getElementById('t-trend');
+  if (count >= 2) {
+    const delta = lastSecs - avgSecs;
+    const pct = +((Math.abs(delta)/avgSecs)*100).toFixed(1);
+    if (Math.abs(delta) < 3) {
+      trendEl.textContent = '≈ avg';
+      trendEl.style.color = 'var(--stone)';
+    } else if (delta < 0) {
+      trendEl.textContent = `↑ ${pct}% faster`;
+      trendEl.style.color = 'var(--moss)';
+    } else {
+      trendEl.textContent = `↓ ${pct}% slower`;
+      trendEl.style.color = 'var(--summit)';
+    }
+  } else {
+    trendEl.textContent = 'Need 2+ sessions';
+    trendEl.style.color = 'var(--stone)';
+    trendEl.style.fontSize = '0.82rem';
+  }
+
+  // Chart
+  const wrap = document.getElementById('tempo-chart-wrap');
+  wrap.style.display = 'block';
+  const canvas = document.getElementById('tempoChart');
+  canvas.width  = canvas.parentElement.offsetWidth || 800;
+  canvas.height = 180;
+  if (tempoChart) tempoChart.destroy();
+
+  const labels = tempoSessions.map(s => formatDate(s.date));
+  const paces  = tempoSessions.map(s => paceToSecs(s.avgTempoPace));
+  const avgArr = tempoSessions.map(() => avgSecs);
+
+  tempoChart = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Avg Tempo Pace', data: paces,
+          borderColor: '#C8523A', backgroundColor: 'rgba(200,82,58,0.08)',
+          pointBackgroundColor: '#C8523A', pointBorderColor: 'white', pointBorderWidth: 2, pointRadius: 6,
+          tension: 0.3, fill: true, borderWidth: 2.5 },
+        { label: 'All-Session Avg', data: avgArr,
+          borderColor: 'rgba(212,131,10,0.6)', borderDash: [5,3],
+          pointRadius: 0, borderWidth: 1.5, fill: false }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: item => item.dataset.label === 'Avg Tempo Pace'
+              ? `Avg tempo: ${secsToPace(item.parsed.y)}/mi`
+              : `All-session avg: ${secsToPace(item.parsed.y)}/mi`
+          },
+          backgroundColor: '#2C1810', titleColor: '#E8E0D8', bodyColor: '#F0A830', padding: 10, cornerRadius: 4
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#8B6347', font: { family: 'Barlow', size: 11 } }, grid: { color: '#F5F1EC' } },
+        y: { reverse: true,
+          ticks: { color: '#C8523A', font: { family: 'Barlow', size: 11 }, callback: v => secsToPace(v) },
+          grid: { color: '#F5F1EC' } }
+      }
+    }
+  });
+
+  // Session log
+  const logBody = document.getElementById('tempo-log-body');
+  const sessionRows = [...tempoSessions].reverse().map(s => {
+    const idx = activities.indexOf(s);
+    const tempoLaps = (s.laps || []).filter(l => l.type === 'tempo' && l.pace);
+    const lapDetail = tempoLaps.map((l,i) => {
+      let chip = `${l.pace}/mi`;
+      if (l.time) chip += ` · ${l.time}`;
+      if (l.dist) chip += ` · ${l.dist}mi`;
+      return `<span style="font-size:0.72rem;background:#FEF0EE;color:var(--summit);padding:1px 6px;border-radius:10px;margin-right:4px;">Lap ${i+1}: ${chip}</span>`;
+    }).join('');
+    const delta = avgSecs - paceToSecs(s.avgTempoPace);
+    const pct   = +((Math.abs(delta)/avgSecs)*100).toFixed(1);
+    let pill = '';
+    if (Math.abs(delta) < 3) pill = `<span class="delta-pill baseline">≈ avg</span>`;
+    else if (delta > 0)      pill = `<span class="delta-pill improve">↑ ${pct}% faster</span>`;
+    else                     pill = `<span class="delta-pill decline">↓ ${pct}% slower</span>`;
+
+    return `
+      <div class="activity-entry" style="grid-template-columns:90px 80px 1fr 90px 52px;">
+        <span style="font-size:0.78rem;color:var(--trail);font-weight:500;">${formatDate(s.date)}</span>
+        <span><span class="type-tag" style="background:#FEF0EE;color:var(--summit);border:1px solid #F5C0B0;font-size:0.6rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:2px 6px;border-radius:2px;">Tempo</span></span>
+        <span>
+          <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;color:var(--soil);">${s.avgTempoPace}<span style="font-size:0.7rem;color:var(--stone);font-weight:400;">/mi avg</span></span>
+          <span style="font-size:0.7rem;color:var(--stone);"> · ${s.tempoLapCount} interval${s.tempoLapCount!==1?'s':''}</span>
+          ${s.dist ? `<span style="font-size:0.7rem;color:var(--stone);"> · ${s.dist} mi total</span>` : ''}
+          <br><span style="margin-top:3px;display:inline-block;">${lapDetail}</span>
+        </span>
+        <span>${pill}</span>
+        <span class="row-actions">
+          <button class="icon-btn" onclick="openActivityModal(${idx})" title="Edit">✏️</button>
+          <button class="icon-btn delete" onclick="deleteActivity(${idx})" title="Delete">✕</button>
+        </span>
+      </div>`;
+  }).join('');
+
+  logBody.innerHTML = `
+    <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--stone);font-weight:600;padding:6px 16px;border-bottom:1px solid var(--fog);background:#FAFAF8;display:grid;grid-template-columns:90px 80px 1fr 90px 52px;gap:8px;">
+      <span>Date</span><span>Type</span><span>Pace / Intervals</span><span>vs Avg</span><span></span>
+    </div>
+    ${sessionRows || '<div class="empty-state"><div class="empty-icon">🔥</div><p>No sessions yet.</p></div>'}`;
+}
+
+// ── RENDER ALL ────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderWorkouts();
+  renderWeeklyVolume();
+  renderFiveks();
+  renderTempo();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  updateCountdown();
+  await loadData();
+  renderAll();
+});
+</script>
+</body>
+</html>
