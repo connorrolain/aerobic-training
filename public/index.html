@@ -973,6 +973,10 @@
   <!-- ACTIONS -->
   <div class="top-actions">
     <button class="btn btn-primary" onclick="openActivityModal()">+ Log Activity</button>
+    <label class="btn btn-secondary" style="cursor:pointer;font-size:0.75rem;padding:8px 14px;">
+      Import Backup
+      <input type="file" accept=".json" style="display:none" onchange="importData(event)">
+    </label>
   </div>
 
   <!-- WEEKLY VOLUME -->
